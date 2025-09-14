@@ -101,9 +101,7 @@ app.post('/webhook/human-request', async (req, res) => {
 Zákazník: ${customer_name}
 Telefón: ${customer_phone}
 Dôvod: ${requestReason}
-Naliehavosť: ${urgencyLevel}
-
-Prosím kontaktujte zákazníka do 30 minút.`;
+`;
 
     const messageResponse = await client.messages.create({
       body: smsMessage,
