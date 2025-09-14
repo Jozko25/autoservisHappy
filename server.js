@@ -10,12 +10,30 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// Initialize Twilio client safely
+let client = null;
 const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 const autoservisPhone = process.env.AUTOSERVIS_PHONE_NUMBER || '+421910223761';
 
+try {
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    console.log('Twilio client initialized successfully');
+  } else {
+    console.warn('⚠️  Twilio credentials not found. SMS functionality will be disabled.');
+  }
+} catch (error) {
+  console.error('Failed to initialize Twilio client:', error.message);
+}
+
 app.post('/webhook/sms', async (req, res) => {
   try {
+    if (!client) {
+      return res.status(503).json({
+        error: 'SMS service unavailable - Twilio not configured'
+      });
+    }
+
     const { to, message } = req.body;
 
     if (!to || !message) {
@@ -57,6 +75,12 @@ app.post('/webhook/sms', async (req, res) => {
 
 app.post('/webhook/human-request', async (req, res) => {
   try {
+    if (!client) {
+      return res.status(503).json({
+        error: 'SMS service unavailable - Twilio not configured'
+      });
+    }
+
     const { customer_name, customer_phone, reason, urgency } = req.body;
 
     if (!customer_name || !customer_phone) {
@@ -104,8 +128,13 @@ Prosím kontaktujte zákazníka do 30 minút.`;
   }
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get('/health', (_, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    twilioConfigured: !!client,
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 app.listen(port, '0.0.0.0', () => {
