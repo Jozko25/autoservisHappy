@@ -16,8 +16,12 @@ const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 const autoservisPhone = process.env.AUTOSERVIS_PHONE_NUMBER || '+421910223761';
 
 try {
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-    client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  // Check for both possible environment variable names
+  const accountSid = process.env.TWILIO_ACTUAL_ACCOUNT_SID || process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+  if (accountSid && authToken) {
+    client = twilio(accountSid, authToken);
     console.log('Twilio client initialized successfully');
   } else {
     console.warn('⚠️  Twilio credentials not found. SMS functionality will be disabled.');
