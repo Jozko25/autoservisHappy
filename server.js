@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-const autoservisPhone = process.env.AUTOSERVIS_PHONE_NUMBER || '+421901234567';
+const autoservisPhone = process.env.AUTOSERVIS_PHONE_NUMBER || '+421910223761';
 
 app.post('/webhook/sms', async (req, res) => {
   try {
