@@ -18,6 +18,7 @@ Edit `.env` with your Twilio credentials:
 - `TWILIO_ACCOUNT_SID`: Your Twilio Account SID
 - `TWILIO_AUTH_TOKEN`: Your Twilio Auth Token
 - `TWILIO_PHONE_NUMBER`: Your US Twilio phone number (e.g., +15551234567)
+- `AUTOSERVIS_PHONE_NUMBER`: Slovak phone number for autoservis notifications (e.g., +421901234567)
 - `PORT`: Server port (default: 3000)
 
 ## Usage
@@ -52,6 +53,30 @@ Send SMS to Slovak phone number.
   "messageSid": "SM...",
   "to": "+421901234567",
   "message": "Your message text"
+}
+```
+
+### POST /webhook/human-request
+Send SMS notification when customer requests human contact.
+
+**Request body:**
+```json
+{
+  "customer_name": "Ján Novák",
+  "customer_phone": "+421901234567",
+  "reason": "Potrebujem konzultáciu",
+  "urgency": "vysoká"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Požiadavka o ľudský kontakt bola úspešne odoslaná",
+  "messageSid": "SM...",
+  "customer_name": "Ján Novák",
+  "customer_phone": "+421901234567"
 }
 ```
 

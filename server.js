@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+const autoservisPhone = process.env.AUTOSERVIS_PHONE_NUMBER || '+421901234567';
 
 app.post('/webhook/sms', async (req, res) => {
   try {
@@ -54,6 +55,55 @@ app.post('/webhook/sms', async (req, res) => {
   }
 });
 
+app.post('/webhook/human-request', async (req, res) => {
+  try {
+    const { customer_name, customer_phone, reason, urgency } = req.body;
+
+    if (!customer_name || !customer_phone) {
+      return res.status(400).json({
+        error: 'Missing required fields: customer_name, customer_phone'
+      });
+    }
+
+    const urgencyLevel = urgency || 'stredná';
+    const requestReason = reason || 'Všeobecná požiadavka o kontakt';
+
+    const smsMessage = `🚗 AUTOSERVIS HAPPY - POŽIADAVKA O KONTAKT
+
+Zákazník: ${customer_name}
+Telefón: ${customer_phone}
+Dôvod: ${requestReason}
+Naliehavosť: ${urgencyLevel}
+
+Prosím kontaktujte zákazníka do 30 minút.`;
+
+    const messageResponse = await client.messages.create({
+      body: smsMessage,
+      from: fromNumber,
+      to: autoservisPhone
+    });
+
+    console.log(`Human request SMS sent successfully: ${messageResponse.sid}`);
+    console.log(`Customer: ${customer_name} (${customer_phone}), Reason: ${requestReason}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Požiadavka o ľudský kontakt bola úspešne odoslaná',
+      messageSid: messageResponse.sid,
+      customer_name: customer_name,
+      customer_phone: customer_phone
+    });
+
+  } catch (error) {
+    console.error('Error sending human request SMS:', error);
+
+    res.status(500).json({
+      error: 'Nepodarilo sa odoslať požiadavku o kontakt',
+      details: error.message
+    });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
@@ -62,4 +112,5 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`Webhook server running on port ${port}`);
   console.log(`Health check: http://localhost:${port}/health`);
   console.log(`SMS webhook: http://localhost:${port}/webhook/sms`);
+  console.log(`Human request webhook: http://localhost:${port}/webhook/human-request`);
 });
