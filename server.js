@@ -138,8 +138,9 @@ app.get('/health', (_, res) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Webhook server running on port ${port}`);
-  console.log(`Health check: http://localhost:${port}/health`);
-  console.log(`SMS webhook: http://localhost:${port}/webhook/sms`);
-  console.log(`Human request webhook: http://localhost:${port}/webhook/human-request`);
+  console.log(`🚀 Webhook server running on port ${port}`);
+  console.log(`📊 Health check: http://localhost:${port}/health`);
+  console.log(`📱 SMS webhook: http://localhost:${port}/webhook/sms`);
+  console.log(`👤 Human request webhook: http://localhost:${port}/webhook/human-request`);
+  console.log(`🔧 Twilio configured: ${!!client}`);
 });
