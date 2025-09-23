@@ -41,7 +41,7 @@ app.get('/health', (req, res) => {
     twilioConfigured: !!global.twilioClient,
     googleCalendarConfigured: googleCalendarStatus,
     environment: process.env.NODE_ENV || 'development',
-    version: 'FINAL-WITH-BOOKING',
+    version: 'FINAL-WORKING-BOOKING-v3',
     services: {
       sms: !!global.twilioClient ? 'available' : 'unavailable',
       booking: googleCalendarStatus === 'initialized' ? 'available' : 'unavailable'
@@ -53,7 +53,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Autoservis Happy API',
-    version: 'FINAL-WITH-BOOKING',
+    version: 'FINAL-WORKING-BOOKING-v3',
     status: 'running',
     timestamp: new Date().toISOString(),
     endpoints: {
