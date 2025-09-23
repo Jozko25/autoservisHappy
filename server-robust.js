@@ -48,7 +48,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Autoservis Happy API',
-    version: '1.0.0',
+    version: '2.0.0-ROBUST-BOOKING',
     status: 'running',
     timestamp: new Date().toISOString(),
     endpoints: {
@@ -101,12 +101,19 @@ try {
 }
 
 // Load booking routes safely
+console.log('📋 Loading booking routes...');
 try {
   const bookingRoutes = require('./routes/booking');
   app.use('/booking', bookingRoutes);
-  console.log('✅ Booking routes loaded and mounted');
+  console.log('✅ Booking routes loaded and mounted at /booking/*');
+  console.log('📅 Available booking endpoints:');
+  console.log('   - POST /booking/appointment (create/check availability)');
+  console.log('   - DELETE /booking/appointment/:id (cancel)');
+  console.log('   - GET /booking/availability (check slots)');
+  console.log('   - GET /booking/appointments (list)');
 } catch (error) {
   console.error('❌ Failed to load booking routes:', error.message);
+  console.error('❌ Error details:', error.stack);
   console.log('📋 Booking endpoints will be unavailable');
 }
 
