@@ -32,10 +32,11 @@ try {
   console.error('Failed to initialize Twilio client:', error.message);
 }
 
-// Initialize Google Calendar API
+// Initialize Google Calendar API (don't block server startup)
 googleCalendar.initialize().catch(error => {
   console.error('⚠️  Failed to initialize Google Calendar:', error.message);
   console.log('Google Calendar booking features will be unavailable');
+  console.log('Server will continue running with SMS-only functionality');
 });
 
 // Mount booking routes
@@ -142,11 +143,24 @@ Dôvod: ${requestReason}
 });
 
 app.get('/health', (_, res) => {
+  let googleCalendarStatus = 'unknown';
+  try {
+    googleCalendar.getCalendar();
+    googleCalendarStatus = 'initialized';
+  } catch (error) {
+    googleCalendarStatus = 'not_configured';
+  }
+
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     twilioConfigured: !!client,
-    environment: process.env.NODE_ENV || 'development'
+    googleCalendarConfigured: googleCalendarStatus,
+    environment: process.env.NODE_ENV || 'development',
+    services: {
+      sms: !!client ? 'available' : 'unavailable',
+      booking: googleCalendarStatus === 'initialized' ? 'available' : 'unavailable'
+    }
   });
 });
 

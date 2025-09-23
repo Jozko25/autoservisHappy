@@ -12,6 +12,20 @@ const TIMEZONE = 'Europe/Bratislava';
  */
 router.post('/appointment', async (req, res) => {
   try {
+    // Check if Google Calendar is initialized
+    try {
+      googleCalendar.getCalendar();
+    } catch (calendarError) {
+      return res.status(503).json({
+        success: false,
+        error: 'Google Calendar service nedostupný. Prosím kontaktujte nás priamo.',
+        fallback: {
+          phone: '+421910223761',
+          message: 'Zavolajte nám priamo pre rezerváciu termínu'
+        }
+      });
+    }
+
     const {
       action,
       customerName,

@@ -10,8 +10,15 @@ class GoogleCalendarService {
 
   async initialize() {
     try {
+      // Check if Google Calendar credentials are available
       const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
                       path.join(__dirname, '..', 'google-credentials.json');
+
+      // Check if credentials exist
+      const fs = require('fs');
+      if (!fs.existsSync(keyPath)) {
+        throw new Error(`Google Calendar credentials not found at: ${keyPath}. Please add google-credentials.json file or set GOOGLE_SERVICE_ACCOUNT_KEY_PATH environment variable.`);
+      }
 
       const auth = new google.auth.GoogleAuth({
         keyFile: keyPath,
