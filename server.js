@@ -2,6 +2,8 @@ const express = require('express');
 const twilio = require('twilio');
 const cors = require('cors');
 require('dotenv').config();
+const googleCalendar = require('./config/google-calendar');
+const bookingRoutes = require('./routes/booking');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,6 +31,15 @@ try {
 } catch (error) {
   console.error('Failed to initialize Twilio client:', error.message);
 }
+
+// Initialize Google Calendar API
+googleCalendar.initialize().catch(error => {
+  console.error('⚠️  Failed to initialize Google Calendar:', error.message);
+  console.log('Google Calendar booking features will be unavailable');
+});
+
+// Mount booking routes
+app.use('/booking', bookingRoutes);
 
 app.post('/webhook/sms', async (req, res) => {
   try {
@@ -144,5 +155,11 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`📊 Health check: http://localhost:${port}/health`);
   console.log(`📱 SMS webhook: http://localhost:${port}/webhook/sms`);
   console.log(`👤 Human request webhook: http://localhost:${port}/webhook/human-request`);
+  console.log(`📅 Booking endpoints:`);
+  console.log(`   - Create appointment: POST http://localhost:${port}/booking/appointment`);
+  console.log(`   - Cancel appointment: DELETE http://localhost:${port}/booking/appointment/:id`);
+  console.log(`   - Check availability: GET http://localhost:${port}/booking/availability`);
+  console.log(`   - List appointments: GET http://localhost:${port}/booking/appointments`);
   console.log(`🔧 Twilio configured: ${!!client}`);
+  console.log(`📆 Google Calendar: Initializing...`);
 });
