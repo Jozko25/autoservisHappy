@@ -143,8 +143,8 @@ Dôvod: ${requestReason}
       to: process.env.AUTOSERVIS_PHONE_NUMBER || '+421910223761'
     });
 
-    console.log(`Human request SMS sent successfully: ${messageResponse.sid}`);
-    console.log(`Customer: ${customer_name} (${customer_phone}), Reason: ${requestReason}`);
+    console.log(`✅ Human contact request SMS sent successfully: ${messageResponse.sid}`);
+    console.log(`👤 Customer: ${customer_name} (${customer_phone}), Reason: ${requestReason}`);
 
     res.status(200).json({
       success: true,

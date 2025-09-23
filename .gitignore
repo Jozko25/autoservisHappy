@@ -11,6 +11,7 @@ yarn-error.log*
 # Google credentials - never commit these!
 google-credentials.json
 google-service-account-*.json
+railway-google-credentials.txt
 
 # Other sensitive files
 .env.*

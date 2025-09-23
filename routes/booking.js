@@ -130,23 +130,8 @@ router.post('/appointment', async (req, res) => {
       summary: `Servis - ${customerName} (${serviceType || 'Všeobecný'})`
     });
 
-    // Send SMS confirmation to customer
-    const appointmentTime = moment(startTime).tz(TIMEZONE);
-    const message = `Vaša rezervácia v Autoservis Happy bola potvrdená na ${appointmentTime.format('DD.MM.YYYY')} o ${appointmentTime.format('HH:mm')}. ID rezervácie: ${appointment.eventId}`;
-
-    try {
-      await twilio.sendSMS(customerPhone, message);
-    } catch (smsError) {
-      console.error('Failed to send SMS confirmation:', smsError);
-    }
-
-    // Send SMS notification to autoservis
-    const notificationMessage = `Nová rezervácia: ${customerName}, tel: ${customerPhone}, ${appointmentTime.format('DD.MM.YYYY HH:mm')}, ${serviceType || 'Všeobecný servis'}`;
-    try {
-      await twilio.sendNotification(notificationMessage);
-    } catch (smsError) {
-      console.error('Failed to send SMS notification:', smsError);
-    }
+    // SMS disabled for bookings - only Google Calendar notifications
+    console.log('Booking created successfully without SMS notifications');
 
     res.status(201).json({
       success: true,
@@ -182,15 +167,8 @@ router.delete('/appointment/:id', async (req, res) => {
 
     const result = await bookingUtils.cancelAppointment(id);
 
-    // Send SMS confirmation if phone provided
-    if (customerPhone) {
-      const message = `Vaša rezervácia (ID: ${id}) v Autoservis Happy bola zrušená. ${reason ? `Dôvod: ${reason}` : ''}`;
-      try {
-        await twilio.sendSMS(customerPhone, message);
-      } catch (smsError) {
-        console.error('Failed to send cancellation SMS:', smsError);
-      }
-    }
+    // SMS disabled for booking cancellations - only Google Calendar notifications
+    console.log('Booking cancelled successfully without SMS notifications');
 
     res.json({
       success: true,
