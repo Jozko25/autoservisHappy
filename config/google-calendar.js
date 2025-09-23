@@ -10,24 +10,39 @@ class GoogleCalendarService {
 
   async initialize() {
     try {
-      // Check if Google Calendar credentials are available
-      const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
-                      path.join(__dirname, '..', 'google-credentials.json');
+      let auth;
 
-      // Check if credentials exist
-      const fs = require('fs');
-      if (!fs.existsSync(keyPath)) {
-        throw new Error(`Google Calendar credentials not found at: ${keyPath}. Please add google-credentials.json file or set GOOGLE_SERVICE_ACCOUNT_KEY_PATH environment variable.`);
+      // Try environment variable first (recommended for Railway)
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        auth = new google.auth.GoogleAuth({
+          credentials: credentials,
+          scopes: [
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events',
+            'https://www.googleapis.com/auth/calendar.readonly'
+          ],
+        });
+      } else {
+        // Fallback to file-based credentials
+        const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
+                        path.join(__dirname, '..', 'google-credentials.json');
+
+        // Check if credentials exist
+        const fs = require('fs');
+        if (!fs.existsSync(keyPath)) {
+          throw new Error(`Google Calendar credentials not found. Please set GOOGLE_SERVICE_ACCOUNT_JSON environment variable or add google-credentials.json file.`);
+        }
+
+        auth = new google.auth.GoogleAuth({
+          keyFile: keyPath,
+          scopes: [
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events',
+            'https://www.googleapis.com/auth/calendar.readonly'
+          ],
+        });
       }
-
-      const auth = new google.auth.GoogleAuth({
-        keyFile: keyPath,
-        scopes: [
-          'https://www.googleapis.com/auth/calendar',
-          'https://www.googleapis.com/auth/calendar.events',
-          'https://www.googleapis.com/auth/calendar.readonly'
-        ],
-      });
 
       const authClient = await auth.getClient();
 
