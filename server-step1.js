@@ -39,10 +39,10 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Autoservis Happy API',
-    version: 'step1',
+    version: 'step1-v2',
     status: 'running',
     timestamp: new Date().toISOString(),
-    message: 'Step 1: Basic server with SMS functionality'
+    message: 'Step 1 v2: Basic server with SMS functionality - FORCED REDEPLOY'
   });
 });
 
