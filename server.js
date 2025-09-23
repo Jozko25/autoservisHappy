@@ -8,6 +8,11 @@ const bookingRoutes = require('./routes/booking');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Log environment info for debugging
+console.log('🚀 Starting Autoservis Happy server...');
+console.log('📍 Environment:', process.env.NODE_ENV || 'development');
+console.log('🔌 Port:', port);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -17,6 +22,7 @@ let client = null;
 const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 const autoservisPhone = process.env.AUTOSERVIS_PHONE_NUMBER || '+421910223761';
 
+console.log('🔧 Initializing Twilio...');
 try {
   // Check for both possible environment variable names
   const accountSid = process.env.TWILIO_ACTUAL_ACCOUNT_SID || process.env.TWILIO_ACCOUNT_SID;
@@ -24,23 +30,44 @@ try {
 
   if (accountSid && authToken) {
     client = twilio(accountSid, authToken);
-    console.log('Twilio client initialized successfully');
+    console.log('✅ Twilio client initialized successfully');
   } else {
     console.warn('⚠️  Twilio credentials not found. SMS functionality will be disabled.');
   }
 } catch (error) {
-  console.error('Failed to initialize Twilio client:', error.message);
+  console.error('❌ Failed to initialize Twilio client:', error.message);
 }
 
 // Initialize Google Calendar API (don't block server startup)
-googleCalendar.initialize().catch(error => {
-  console.error('⚠️  Failed to initialize Google Calendar:', error.message);
-  console.log('Google Calendar booking features will be unavailable');
-  console.log('Server will continue running with SMS-only functionality');
-});
+console.log('📅 Initializing Google Calendar...');
+googleCalendar.initialize()
+  .then(() => {
+    console.log('✅ Google Calendar initialized successfully');
+  })
+  .catch(error => {
+    console.error('⚠️  Failed to initialize Google Calendar:', error.message);
+    console.log('📋 Google Calendar booking features will be unavailable');
+    console.log('📱 Server will continue running with SMS-only functionality');
+  });
 
 // Mount booking routes
 app.use('/booking', bookingRoutes);
+
+// Root endpoint for debugging
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Autoservis Happy API',
+    version: '1.0.0',
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      sms: '/webhook/sms',
+      humanRequest: '/webhook/human-request',
+      booking: '/booking/appointment'
+    }
+  });
+});
 
 app.post('/webhook/sms', async (req, res) => {
   try {
@@ -164,8 +191,19 @@ app.get('/health', (_, res) => {
   });
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Webhook server running on port ${port}`);
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.log('🔄 Server will continue running...');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.log('🔄 Server will continue running...');
+});
+
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Autoservis Happy server running on port ${port}`);
   console.log(`📊 Health check: http://localhost:${port}/health`);
   console.log(`📱 SMS webhook: http://localhost:${port}/webhook/sms`);
   console.log(`👤 Human request webhook: http://localhost:${port}/webhook/human-request`);
@@ -176,4 +214,13 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`   - List appointments: GET http://localhost:${port}/booking/appointments`);
   console.log(`🔧 Twilio configured: ${!!client}`);
   console.log(`📆 Google Calendar: Initializing...`);
+  console.log(`✅ Server startup completed successfully`);
+});
+
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${port} is already in use`);
+    process.exit(1);
+  }
 });
