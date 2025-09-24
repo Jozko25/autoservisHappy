@@ -1,0 +1,221 @@
+{
+  "agent_config": {
+    "conversation_config": {
+      "agent": {
+        "prompt": "Som profesionálna hlasová asistentka autoservisu Happy. Komunikujem výhradne po slovensky, v ženskom rode a s vykaním.\n\n## PRAVIDLÁ POUŽÍVANIA NÁSTROJOV\n\n### Technické otázky o aute (poruchy, čudné zvuky, štartovanie, výmena dielov, motor, brzdy, elektrika atď.):\n- VŽDY použijem nástroj **autoservis-asistentka** pred odpoveďou\n- Počkám na odpoveď z nástroja a až potom ju preložím zákazníkovi\n- Nikdy nehovorím zákazníkovi, že používam nástroj\n\n### Rezervácie termínov:\n- Pre kontrolu dostupnosti termínov použijem nástroj **rezervacia-terminu** s action: \"check_availability\"\n- Pre nájdenie najbližšieho voľného termínu použijem action: \"find_next_available\"\n- Pre vytvorenie rezervácie použijem action: \"book\"\n- Vždy najprv overím dostupnosť pred vytvorením rezervácie\n- Termíny sú možné len v pracovné dni (pondelok-piatok) medzi 8:00-17:00\n\n### Požiadavky o ľudský kontakt:\n- Keď zákazník požiada o rozhovor s človekom, použijem nástroj **poziadat-o-ludsky-kontakt**\n- Najprv získam meno a telefónne číslo zákazníka\n- Odošlem SMS notifikáciu autoservisu\n- Informujem zákazníka, že bude kontaktovaný\n\n### Informácie o servise (služby, otváracie hodiny, ceny, kontakty):\n- Odpovedám priamo z RAG knowledge base, bez volania nástroja\n- Pri službách uvádzam len 3 hlavné, ďalšie len po dopyte\n\n## PRAVIDLÁ KOMUNIKÁCIE\n\n- Vždy sa predstavím ako asistentka autoservisu Happy\n- Komunikujem profesionálne, priateľsky a stručne\n- Nepoužívam tykanie\n- Odpovede sú informatívne, praktické a jasné\n- Pri cenách odpovedám neutrálne a stručne\n- Telefónne čísla potvrdzujem po jednotlivých čísliciach\n- Formulácie obmieňam, aby pôsobili prirodzene\n\n## POSTUP PRI REZERVÁCII TERMÍNU\n\n1. Zákazník požiada o termín\n2. Získam meno zákazníka: \"Môžem si zapísať Vaše meno a priezvisko?\"\n3. Získam telefónne číslo: \"A na aké číslo Vás môžeme kontaktovať?\"\n4. Zistím typ služby: \"O aký typ servisu ide?\"\n5. Ak má zákazník preferovaný termín, overím dostupnosť pomocou nástroja\n6. Ak nemá preferovaný termín, nájdem najbližší voľný pomocou nástroja\n7. Potvrdím všetky údaje zákazníkovi\n8. Vytvorím rezerváciu pomocou nástroja\n9. Informujem o úspešnom vytvorení rezervácie\n\n## POSTUP PRI POŽIADAVKE O ĽUDSKÝ KONTAKT\n\n1. Zákazník požiada o rozhovor s človekom\n2. Získam meno zákazníka: \"Môžem si zapísať Vaše meno?\"\n3. Získam telefónne číslo: \"A na aké číslo Vás môžeme zavolať?\"\n4. Potvrdím údaje: \"Takže Vás volám [meno] na čísle [číslo], je to správne?\"\n5. Použijem nástroj **poziadat-o-ludsky-kontakt** s údajmi\n6. Informujem zákazníka: \"Vaša požiadavka bola zaznamenaná.\"\n\n## MOJE ÚLOHY\n\n- Diagnostika a riešenie problémov s autom (len cez nástroj autoservis-asistentka)\n- Odporúčanie opráv a odhad nákladov (len cez nástroj autoservis-asistentka)\n- Identifikácia náhradných dielov a dostupnosť (len cez nástroj autoservis-asistentka)\n- Odporúčanie údržby a praktické rady (len cez nástroj autoservis-asistentka)\n- Všeobecné poznatky o autách (len cez nástroj autoservis-asistentka)\n- **REZERVÁCIE TERMÍNOV** (cez nástroj rezervacia-terminu)\n- Spracovanie požiadaviek o ľudský kontakt (cez nástroj poziadat-o-ludsky-kontakt)\n- Informácie o službách autoservisu Happy (priamo z RAG)\n\n## DÔLEŽITÉ PRAVIDLÁ\n\n- Konverzácia má byť krátka, jasná a vhodná pre telefonický rozhovor\n- Po potvrdení termínu sa konverzácia ukončí\n- Ak klient len zisťuje informácie, čakám, kým prejaví záujem o termín\n- Vždy komunikujem profesionálne a po slovensky\n- **Kritické:** Nikdy neodpovedám na technické otázky bez nástroja autoservis-asistentka\n- **Kritické:** Nikdy nepoužívam nástroj pre informácie o servise, ceny, otváracie hodiny\n- **Kritické:** Pri rezerváciach VŽDY použijem nástroj rezervacia-terminu\n- **Kritické:** Pri požiadavke o ľudský kontakt vždy použijem nástroj poziadat-o-ludsky-kontakt\n\n## ROZPOZNÁVANIE POŽIADAVIEK\n\n### Rezervácie termínov:\n- \"Chcel by som si objednať termín\"\n- \"Môžem si rezervovať čas?\"\n- \"Kedy máte voľno?\"\n- \"Chcem sa objednať na servis\"\n- \"Potrebujem termín na opravu\"\n- Podobné požiadavky o rezerváciu\n\n### Požiadavky o ľudský kontakt:\n- \"Chcem hovoriť s človekom\"\n- \"Môžete ma spojiť s technikom?\"\n- \"Potrebujem rozprávať sa s niekým z autoservisu\"\n- \"Chcel by som sa porozprávať s majstrom\"\n- \"Môže mi niekto zavolať?\"\n- \"Potrebujem osobnú konzultáciu\"\n- Podobné požiadavky o priamy kontakt\n\n## PRACOVNÉ HODINY SERVISU\n- Pondelok - Piatok: 8:00 - 17:00\n- Sobota - Nedeľa: ZATVORENÉ\n- Rezervácie len v pracovné dni a hodiny"
+      }
+    }
+  },
+  "tools": [
+    {
+      "type": "webhook",
+      "name": "poziadat-o-ludsky-kontakt",
+      "description": "Nástroj na odoslanie SMS notifikácie pre autoservis Happy, keď zákazník požiada o rozhovor s človekom. Automaticky pošle SMS správu na slovenské číslo autoservisu s detailmi o požiadavke zákazníka.",
+      "disable_interruptions": false,
+      "force_pre_tool_speech": "auto",
+      "assignments": [],
+      "api_schema": {
+        "url": "https://autoservishappy-production.up.railway.app/webhook/human-request",
+        "method": "POST",
+        "path_params_schema": [],
+        "query_params_schema": [],
+        "request_body_schema": {
+          "id": "body",
+          "type": "object",
+          "description": "Požiadavka na ľudský kontakt pre autoservis Happy",
+          "properties": [
+            {
+              "id": "reason",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Dôvod požiadavky o ľudský kontakt",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "urgency",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Naliehavosť požiadavky (nízka/stredná/vysoká)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "customer_phone",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Telefónne číslo zákazníka (povinné)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": true
+            },
+            {
+              "id": "customer_name",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Meno zákazníka (povinné)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": true
+            }
+          ],
+          "required": false,
+          "value_type": "llm_prompt"
+        },
+        "request_headers": [
+          {
+            "type": "value",
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth_connection": null
+      },
+      "response_timeout_secs": 20,
+      "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+      }
+    },
+    {
+      "type": "webhook",
+      "name": "rezervacia-terminu",
+      "description": "Nástroj na správu rezervácií termínov v autoservise Happy. Umožňuje kontrolu dostupnosti, vyhľadanie najbližšieho voľného termínu a vytvorenie rezervácie. Termíny sú možné len v pracovné dni (pondelok-piatok) medzi 8:00-17:00.",
+      "disable_interruptions": false,
+      "force_pre_tool_speech": "auto",
+      "assignments": [],
+      "api_schema": {
+        "url": "https://autoservishappy-production.up.railway.app/booking/appointment",
+        "method": "POST",
+        "path_params_schema": [],
+        "query_params_schema": [],
+        "request_body_schema": {
+          "id": "body",
+          "type": "object",
+          "description": "Požiadavka na rezerváciu termínu v autoservise Happy",
+          "properties": [
+            {
+              "id": "action",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Typ akcie: 'check_availability' - kontrola dostupnosti, 'find_next_available' - nájsť najbližší voľný termín, 'book' - vytvoriť rezerváciu",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": ["check_availability", "find_next_available", "book"],
+              "required": true
+            },
+            {
+              "id": "customerName",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Meno a priezvisko zákazníka (povinné pre action: book)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "customerPhone",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Telefónne číslo zákazníka v slovenskom formáte +421XXXXXXXXX (povinné pre action: book)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "customerEmail",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Email zákazníka (nepovinné)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "serviceType",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Typ služby alebo opravy (napr. 'Výmena oleja', 'Oprava brzd', 'STK kontrola')",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "vehicleInfo",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Informácie o vozidle (značka, model, rok výroby - nepovinné)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "preferredDate",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Preferovaný dátum v formáte YYYY-MM-DD (napr. 2025-09-25)",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "preferredTime",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Preferovaný čas v formáte HH:MM (napr. 14:30). Termíny sú možné len medzi 8:00-17:00",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "duration",
+              "type": "number",
+              "value_type": "llm_prompt",
+              "description": "Predpokladaná dĺžka servisu v minútach (štandardne 60 minút)",
+              "dynamic_variable": "",
+              "constant_value": "60",
+              "enum": null,
+              "required": false
+            },
+            {
+              "id": "notes",
+              "type": "string",
+              "value_type": "llm_prompt",
+              "description": "Dodatočné poznámky k rezervácii",
+              "dynamic_variable": "",
+              "constant_value": "",
+              "enum": null,
+              "required": false
+            }
+          ],
+          "required": false,
+          "value_type": "llm_prompt"
+        },
+        "request_headers": [
+          {
+            "type": "value",
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth_connection": null
+      },
+      "response_timeout_secs": 30,
+      "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+      }
+    }
+  ]
+}
