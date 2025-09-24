@@ -3,6 +3,7 @@ const router = express.Router();
 const moment = require('moment-timezone');
 const bookingUtils = require('../utils/booking-utils');
 const twilio = require('../config/twilio');
+const googleCalendar = require('../config/google-calendar');
 
 const TIMEZONE = 'Europe/Bratislava';
 
