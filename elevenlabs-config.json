@@ -49,10 +49,10 @@
           "id": "booking_action",
           "type": "string",
           "value_type": "llm_prompt",
-          "description": "Pre booking: 'check_availability', 'find_next_available', alebo 'book'. Pre human_contact nevyplňuj.",
+          "description": "PRVÉ VOLANIE: 'find_next_available' na nájdenie termínu. DRUHÉ VOLANIE: 'book' na vytvorenie rezervácie. Pre human_contact nevyplňuj.",
           "dynamic_variable": "",
           "constant_value": "",
-          "enum": ["check_availability", "find_next_available", "book"],
+          "enum": ["find_next_available", "book"],
           "required": false
         },
         {
