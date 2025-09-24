@@ -17,6 +17,26 @@
         "description": "Požiadavka na ľudský kontakt pre autoservis Happy",
         "properties": [
           {
+            "id": "customer_name",
+            "type": "string",
+            "value_type": "llm_prompt",
+            "description": "Meno zákazníka (povinné)",
+            "dynamic_variable": "",
+            "constant_value": "",
+            "enum": null,
+            "required": true
+          },
+          {
+            "id": "customer_phone",
+            "type": "string",
+            "value_type": "llm_prompt",
+            "description": "Telefónne číslo zákazníka (povinné)",
+            "dynamic_variable": "",
+            "constant_value": "",
+            "enum": null,
+            "required": true
+          },
+          {
             "id": "reason",
             "type": "string",
             "value_type": "llm_prompt",
@@ -35,26 +55,6 @@
             "constant_value": "",
             "enum": null,
             "required": false
-          },
-          {
-            "id": "customer_phone",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Telefónne číslo zákazníka (povinné)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": true
-          },
-          {
-            "id": "customer_name",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Meno zákazníka (povinné)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": true
           }
         ],
         "required": false,
