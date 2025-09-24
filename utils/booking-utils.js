@@ -141,11 +141,7 @@ class BookingUtils {
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 
-      // Generate unique event ID to prevent duplicates
-      const eventId = 'booking_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
       const event = {
-        id: eventId,
         summary: appointmentData.summary || `Servis - ${appointmentData.customerName}`,
         description: this.formatDescription(appointmentData),
         start: {
@@ -170,7 +166,6 @@ class BookingUtils {
             customerPhone: appointmentData.customerPhone,
             serviceType: appointmentData.serviceType,
             vehicleInfo: appointmentData.vehicleInfo || '',
-            bookingId: eventId,
           }
         }
       };

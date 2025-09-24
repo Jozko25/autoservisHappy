@@ -30,7 +30,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Autoservis Happy API',
-    version: 'MAIN-UUID-FIXED-v6',
+    version: 'MAIN-EVENTID-FIXED-v7',
     status: 'running',
     timestamp: new Date().toISOString(),
     endpoints: {
