@@ -30,7 +30,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Autoservis Happy API',
-    version: 'MAIN-EVENTID-FIXED-v7',
+    version: 'UNIFIED-SYSTEM-v8',
     status: 'running',
     timestamp: new Date().toISOString(),
     endpoints: {
@@ -248,6 +248,180 @@ app.get('/health', (_, res) => {
       booking: googleCalendarStatus === 'initialized' ? 'available' : 'unavailable'
     }
   });
+});
+
+// Unified API endpoint for ElevenLabs - handles both human contact and booking
+app.post('/api/unified', async (req, res) => {
+  try {
+    const { request_type, customer_name, customer_phone, booking_action, service_type, preferred_date, preferred_time, reason } = req.body;
+
+    console.log('Unified request:', { request_type, customer_name, customer_phone, booking_action });
+
+    if (!request_type || !customer_name || !customer_phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Chýbajú povinné údaje: request_type, customer_name, customer_phone'
+      });
+    }
+
+    if (request_type === 'human_contact') {
+      // Handle human contact request
+      if (!client) {
+        return res.status(503).json({
+          success: false,
+          error: 'SMS služba nie je dostupná'
+        });
+      }
+
+      const smsMessage = `🚗 AUTOSERVIS HAPPY - POŽIADAVKA O KONTAKT
+
+Zákazník: ${customer_name}
+Telefón: ${customer_phone}
+Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
+`;
+
+      const messageResponse = await client.messages.create({
+        body: smsMessage,
+        from: fromNumber,
+        to: autoservisPhone
+      });
+
+      console.log(`Unified human request SMS sent: ${messageResponse.sid}`);
+
+      return res.json({
+        success: true,
+        type: 'human_contact',
+        message: 'Vaša požiadavka o kontakt bola odoslaná. Niekto z tímu Vás bude čoskoro kontaktovať.',
+        messageSid: messageResponse.sid
+      });
+
+    } else if (request_type === 'booking') {
+      // Handle booking request - forward internally
+      const bookingRequest = {
+        body: {
+          action: booking_action || 'find_next_available',
+          customerName: customer_name,
+          customerPhone: customer_phone,
+          serviceType: service_type || 'Všeobecný servis',
+          preferredDate: preferred_date,
+          preferredTime: preferred_time,
+          notes: reason
+        }
+      };
+
+      // Simulate internal booking request
+      const bookingUtils = require('./utils/booking-utils');
+
+      if (booking_action === 'check_availability' && preferred_date) {
+        const slots = await bookingUtils.getAvailableSlots(preferred_date);
+        return res.json({
+          success: true,
+          type: 'booking',
+          action: 'check_availability',
+          date: preferred_date,
+          availableSlots: slots,
+          totalSlots: slots.length,
+          message: slots.length > 0 ?
+            `Mám ${slots.length} voľných termínov na ${preferred_date}` :
+            `Žiaľ, na ${preferred_date} nemám voľný termín`
+        });
+      }
+
+      if (booking_action === 'find_next_available') {
+        const nextSlot = await bookingUtils.findNextAvailableSlot();
+        if (!nextSlot) {
+          return res.status(404).json({
+            success: false,
+            type: 'booking',
+            message: 'Nenašiel sa žiadny voľný termín v najbližších 14 dňoch'
+          });
+        }
+
+        const moment = require('moment-timezone');
+        const slotTime = moment(nextSlot.slot.start).tz('Europe/Bratislava');
+        return res.json({
+          success: true,
+          type: 'booking',
+          action: 'find_next_available',
+          date: nextSlot.date,
+          time: slotTime.format('HH:mm'),
+          slot: nextSlot.slot,
+          message: `Najbližší voľný termín mám ${slotTime.format('DD.MM.YYYY')} o ${slotTime.format('HH:mm')}`
+        });
+      }
+
+      if (booking_action === 'book') {
+        // Create booking
+        let startTime, endTime;
+        const moment = require('moment-timezone');
+
+        if (!preferred_date || !preferred_time) {
+          const nextSlot = await bookingUtils.findNextAvailableSlot();
+          if (!nextSlot) {
+            return res.status(404).json({
+              success: false,
+              type: 'booking',
+              error: 'Nenašiel sa žiadny voľný termín'
+            });
+          }
+          startTime = nextSlot.slot.start;
+          endTime = nextSlot.slot.end;
+        } else {
+          startTime = moment.tz(`${preferred_date} ${preferred_time}`, 'YYYY-MM-DD HH:mm', 'Europe/Bratislava').toISOString();
+          endTime = moment(startTime).add(60, 'minutes').toISOString();
+
+          bookingUtils.validateAppointmentTime(startTime);
+          const isAvailable = await bookingUtils.isSlotAvailable(startTime, endTime);
+          if (!isAvailable) {
+            return res.status(409).json({
+              success: false,
+              type: 'booking',
+              error: 'Tento termín je už obsadený. Prosím, vyberte iný termín.'
+            });
+          }
+        }
+
+        const appointment = await bookingUtils.createAppointment({
+          customerName: customer_name,
+          customerPhone: customer_phone,
+          serviceType: service_type,
+          startTime,
+          endTime,
+          notes: reason,
+          summary: `Servis - ${customer_name} (${service_type || 'Všeobecný'})`
+        });
+
+        return res.json({
+          success: true,
+          type: 'booking',
+          message: 'Rezervácia bola úspešne vytvorená',
+          appointment: {
+            id: appointment.eventId,
+            customerName: customer_name,
+            customerPhone: customer_phone,
+            start: startTime,
+            end: endTime,
+            startFormatted: moment(startTime).tz('Europe/Bratislava').format('DD.MM.YYYY HH:mm'),
+            serviceType: service_type
+          }
+        });
+      }
+
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Neplatný typ požiadavky. Použite "human_contact" alebo "booking"'
+      });
+    }
+
+  } catch (error) {
+    console.error('Unified endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Nastala chyba pri spracovaní požiadavky',
+      details: error.message
+    });
+  }
 });
 
 // Global error handlers to prevent crashes

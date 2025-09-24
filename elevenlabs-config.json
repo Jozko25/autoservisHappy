@@ -1,212 +1,115 @@
-[
-  {
-    "type": "webhook",
-    "name": "poziadat-o-ludsky-kontakt",
-    "description": "Nástroj na odoslanie SMS notifikácie pre autoservis Happy, keď zákazník požiada o rozhovor s človekom. Automaticky pošle SMS správu na slovenské číslo autoservisu s detailmi o požiadavke zákazníka.",
-    "disable_interruptions": false,
-    "force_pre_tool_speech": "auto",
-    "assignments": [],
-    "api_schema": {
-      "url": "https://autoservishappy-production.up.railway.app/webhook/human-request",
-      "method": "POST",
-      "path_params_schema": [],
-      "query_params_schema": [],
-      "request_body_schema": {
-        "id": "body",
-        "type": "object",
-        "description": "Požiadavka na ľudský kontakt pre autoservis Happy",
-        "properties": [
-          {
-            "id": "customer_name",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Meno zákazníka (povinné)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": true
-          },
-          {
-            "id": "customer_phone",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Telefónne číslo zákazníka (povinné)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": true
-          },
-          {
-            "id": "reason",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Dôvod požiadavky o ľudský kontakt",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "urgency",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Naliehavosť požiadavky (nízka/stredná/vysoká)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          }
-        ],
-        "required": false,
-        "value_type": "llm_prompt"
-      },
-      "request_headers": [
+{
+  "type": "webhook",
+  "name": "autoservis-happy-system",
+  "description": "Kompletný systém pre Autoservis Happy - automaticky rozpozná či ide o požiadavku na ľudský kontakt alebo rezerváciu termínu a spracuje ju cez príslušný endpoint",
+  "disable_interruptions": false,
+  "force_pre_tool_speech": "auto",
+  "assignments": [],
+  "api_schema": {
+    "url": "https://autoservishappy-production.up.railway.app/api/unified",
+    "method": "POST",
+    "path_params_schema": [],
+    "query_params_schema": [],
+    "request_body_schema": {
+      "id": "body",
+      "type": "object",
+      "description": "Univerzálny systém pre Autoservis Happy",
+      "properties": [
         {
-          "type": "value",
-          "name": "Content-Type",
-          "value": "application/json"
+          "id": "request_type",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Typ požiadavky: 'human_contact' pre požiadavku o ľudský kontakt, 'booking' pre rezerváciu termínu",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": ["human_contact", "booking"],
+          "required": true
+        },
+        {
+          "id": "customer_name",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Meno zákazníka (povinné)",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "required": true
+        },
+        {
+          "id": "customer_phone",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Telefónne číslo zákazníka vo formáte +421XXXXXXXXX (povinné)",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "required": true
+        },
+        {
+          "id": "booking_action",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Pre booking: 'check_availability', 'find_next_available', alebo 'book'. Pre human_contact nevyplňuj.",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": ["check_availability", "find_next_available", "book"],
+          "required": false
+        },
+        {
+          "id": "service_type",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Typ služby pre booking (napr. 'Výmena oleja', 'Oprava brzd')",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "required": false
+        },
+        {
+          "id": "preferred_date",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Preferovaný dátum vo formáte YYYY-MM-DD",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "required": false
+        },
+        {
+          "id": "preferred_time",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Preferovaný čas vo formáte HH:MM (8:00-17:00)",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "required": false
+        },
+        {
+          "id": "reason",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Dôvod kontaktu alebo poznámky",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": null,
+          "required": false
         }
       ],
-      "auth_connection": null
+      "required": false,
+      "value_type": "llm_prompt"
     },
-    "response_timeout_secs": 20,
-    "dynamic_variables": {
-      "dynamic_variable_placeholders": {}
-    }
+    "request_headers": [
+      {
+        "type": "value",
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "auth_connection": null
   },
-  {
-    "type": "webhook",
-    "name": "rezervacia-terminu",
-    "description": "Nástroj na správu rezervácií termínov v autoservise Happy. Umožňuje kontrolu dostupnosti, vyhľadanie najbližšieho voľného termínu a vytvorenie rezervácie. Termíny sú možné len v pracovné dni (pondelok-piatok) medzi 8:00-17:00.",
-    "disable_interruptions": false,
-    "force_pre_tool_speech": "auto",
-    "assignments": [],
-    "api_schema": {
-      "url": "https://autoservishappy-production.up.railway.app/booking/appointment",
-      "method": "POST",
-      "path_params_schema": [],
-      "query_params_schema": [],
-      "request_body_schema": {
-        "id": "body",
-        "type": "object",
-        "description": "Požiadavka na rezerváciu termínu v autoservise Happy",
-        "properties": [
-          {
-            "id": "action",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Typ akcie: 'check_availability' - kontrola dostupnosti, 'find_next_available' - nájsť najbližší voľný termín, 'book' - vytvoriť rezerváciu",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": ["check_availability", "find_next_available", "book"],
-            "required": true
-          },
-          {
-            "id": "customerName",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Meno a priezvisko zákazníka (povinné pre action: book)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "customerPhone",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Telefónne číslo zákazníka v slovenskom formáte +421XXXXXXXXX (povinné pre action: book)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "customerEmail",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Email zákazníka (nepovinné)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "serviceType",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Typ služby alebo opravy (napr. 'Výmena oleja', 'Oprava brzd', 'STK kontrola')",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "vehicleInfo",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Informácie o vozidle (značka, model, rok výroby - nepovinné)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "preferredDate",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Preferovaný dátum v formáte YYYY-MM-DD (napr. 2025-09-25)",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "preferredTime",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Preferovaný čas v formáte HH:MM (napr. 14:30). Termíny sú možné len medzi 8:00-17:00",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "duration",
-            "type": "number",
-            "value_type": "llm_prompt",
-            "description": "Predpokladaná dĺžka servisu v minútach (štandardne 60 minút)",
-            "dynamic_variable": "",
-            "constant_value": "60",
-            "enum": null,
-            "required": false
-          },
-          {
-            "id": "notes",
-            "type": "string",
-            "value_type": "llm_prompt",
-            "description": "Dodatočné poznámky k rezervácii",
-            "dynamic_variable": "",
-            "constant_value": "",
-            "enum": null,
-            "required": false
-          }
-        ],
-        "required": false,
-        "value_type": "llm_prompt"
-      },
-      "request_headers": [
-        {
-          "type": "value",
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "auth_connection": null
-    },
-    "response_timeout_secs": 30,
-    "dynamic_variables": {
-      "dynamic_variable_placeholders": {}
-    }
+  "response_timeout_secs": 30,
+  "dynamic_variables": {
+    "dynamic_variable_placeholders": {}
   }
-]
+}
