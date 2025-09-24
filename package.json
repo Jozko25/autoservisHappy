@@ -4,11 +4,11 @@
   "description": "Webhook listener for SMS notifications via Twilio",
   "main": "server.js",
   "scripts": {
-    "start": "node server-final.js",
+    "start": "node server.js",
+    "start:final": "node server-final.js",
     "start:robust": "node server-robust.js",
     "start:step1": "node server-step1.js",
     "start:minimal": "node server-minimal.js",
-    "start:original": "node server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {

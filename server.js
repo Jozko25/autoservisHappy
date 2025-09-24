@@ -30,9 +30,15 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Autoservis Happy API',
-    version: '1.0.0',
+    version: 'MAIN-FIXED-BOOKING-v5',
     status: 'running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      sms: '/webhook/sms',
+      humanRequest: '/webhook/human-request',
+      booking: '/booking/appointment'
+    }
   });
 });
 
