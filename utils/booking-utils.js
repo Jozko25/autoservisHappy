@@ -1,5 +1,4 @@
 const moment = require('moment-timezone');
-const { v4: uuidv4 } = require('uuid');
 const googleCalendar = require('../config/google-calendar');
 
 const TIMEZONE = 'Europe/Bratislava';
@@ -143,7 +142,7 @@ class BookingUtils {
       const calendarId = googleCalendar.getCalendarId();
 
       // Generate unique event ID to prevent duplicates
-      const eventId = uuidv4().replace(/-/g, '');
+      const eventId = 'booking_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
       const event = {
         id: eventId,

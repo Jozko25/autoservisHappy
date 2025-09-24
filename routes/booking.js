@@ -143,7 +143,7 @@ router.post('/appointment', async (req, res) => {
         customerPhone,
         start: startTime,
         end: endTime,
-        startFormatted: appointmentTime.format('DD.MM.YYYY HH:mm'),
+        startFormatted: moment(startTime).tz(TIMEZONE).format('DD.MM.YYYY HH:mm'),
         serviceType,
         vehicleInfo
       }
