@@ -3,8 +3,8 @@ const googleCalendar = require('../config/google-calendar');
 
 const TIMEZONE = 'Europe/Bratislava';
 const BUSINESS_HOURS = {
-  start: 8, // 8:00 AM
-  end: 17,  // 5:00 PM (matches autoservis working hours)
+  start: 8,  // 8:00 AM
+  end: 19,   // 7:00 PM (matches website: 8:00-19:00)
 };
 const APPOINTMENT_DURATION = 60; // minutes
 const BUFFER_TIME = 15; // minutes between appointments
@@ -117,7 +117,16 @@ class BookingUtils {
       currentTime.add(SLOT_INTERVAL, 'minutes');
     }
 
-    return availableSlots;
+    // Limit to manageable number of slots - show every hour + 30 minute mark
+    const limitedSlots = availableSlots.filter((slot, index) => {
+      const time = moment(slot.start);
+      const minute = time.minute();
+      // Show slots at :00 and :30 minutes only
+      return minute === 0 || minute === 30;
+    });
+
+    // If we have too many, take first 8 slots
+    return limitedSlots.slice(0, 8);
   }
 
   /**

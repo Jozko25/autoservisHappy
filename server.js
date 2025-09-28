@@ -512,6 +512,21 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
         let startTime;
         let endTime;
 
+        // Validate date is not in the past
+        if (preferred_date) {
+          const requestedDate = moment.tz(preferred_date, 'YYYY-MM-DD', 'Europe/Bratislava');
+          const today = moment.tz('Europe/Bratislava').startOf('day');
+
+          if (requestedDate.isBefore(today)) {
+            return res.status(400).json({
+              success: false,
+              type: 'booking',
+              error: `Nie je možné rezervovať termín v minulosti. Dátum ${preferred_date} už prešiel. Použite prosím aktuálny dátum.`,
+              suggestedDate: moment.tz('Europe/Bratislava').format('YYYY-MM-DD')
+            });
+          }
+        }
+
         if (!preferred_date || !preferred_time) {
           const nextSlot = await bookingUtils.findNextAvailableSlot();
           if (!nextSlot) {
