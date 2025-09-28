@@ -8,6 +8,7 @@ const BUSINESS_HOURS = {
 };
 const APPOINTMENT_DURATION = 60; // minutes
 const BUFFER_TIME = 15; // minutes between appointments
+const SLOT_INTERVAL = 15; // Generate slots every 15 minutes for flexibility
 
 class BookingUtils {
   /**
@@ -87,17 +88,20 @@ class BookingUtils {
     );
 
     const availableSlots = [];
-    let currentSlot = startOfDay.clone();
+    let currentTime = startOfDay.clone();
 
-    while (currentSlot.add(APPOINTMENT_DURATION, 'minutes').isBefore(endOfDay)) {
-      const slotStart = currentSlot.clone().subtract(APPOINTMENT_DURATION, 'minutes');
-      const slotEnd = currentSlot.clone();
+    // Generate all possible start times (every 15 minutes)
+    while (currentTime.clone().add(APPOINTMENT_DURATION, 'minutes').isSameOrBefore(endOfDay)) {
+      const slotStart = currentTime.clone();
+      const slotEnd = currentTime.clone().add(APPOINTMENT_DURATION, 'minutes');
 
-      // Check if this slot conflicts with any busy periods
+      // Check if this slot conflicts with any busy periods (including buffer time)
       const isConflict = busySlots.some(busy => {
         const busyStart = moment(busy.start);
-        const busyEnd = moment(busy.end);
-        return (slotStart.isBefore(busyEnd) && slotEnd.isAfter(busyStart));
+        const busyEnd = moment(busy.end).add(BUFFER_TIME, 'minutes'); // Add buffer after appointments
+
+        // Check for any overlap
+        return !(slotEnd.isSameOrBefore(busyStart) || slotStart.isSameOrAfter(busyEnd));
       });
 
       if (!isConflict) {
@@ -109,8 +113,8 @@ class BookingUtils {
         });
       }
 
-      // Add buffer time
-      currentSlot.add(BUFFER_TIME, 'minutes');
+      // Move to next possible start time (every 15 minutes)
+      currentTime.add(SLOT_INTERVAL, 'minutes');
     }
 
     return availableSlots;
