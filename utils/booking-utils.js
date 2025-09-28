@@ -15,6 +15,7 @@ class BookingUtils {
    */
   async isSlotAvailable(startTime, endTime) {
     try {
+      await googleCalendar.ensureInitialized();
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 
@@ -39,6 +40,7 @@ class BookingUtils {
    */
   async getBusySlots(startDate, endDate) {
     try {
+      await googleCalendar.ensureInitialized();
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 
@@ -61,6 +63,7 @@ class BookingUtils {
    * Get available time slots for a specific date
    */
   async getAvailableSlots(date) {
+    await googleCalendar.ensureInitialized();
     const startOfDay = moment.tz(date, TIMEZONE)
       .hour(BUSINESS_HOURS.start)
       .minute(0)
@@ -145,6 +148,7 @@ class BookingUtils {
    */
   async createAppointment(appointmentData) {
     try {
+      await googleCalendar.ensureInitialized();
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 
@@ -203,6 +207,7 @@ class BookingUtils {
    */
   async cancelAppointment(eventId) {
     try {
+      await googleCalendar.ensureInitialized();
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 
@@ -226,6 +231,7 @@ class BookingUtils {
    */
   async updateAppointment(eventId, updates) {
     try {
+      await googleCalendar.ensureInitialized();
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 
@@ -262,6 +268,7 @@ class BookingUtils {
    */
   async getAppointments(startDate, endDate) {
     try {
+      await googleCalendar.ensureInitialized();
       const calendar = googleCalendar.getCalendar();
       const calendarId = googleCalendar.getCalendarId();
 

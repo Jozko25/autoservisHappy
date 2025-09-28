@@ -15,7 +15,7 @@ router.post('/appointment', async (req, res) => {
   try {
     // Check if Google Calendar is initialized
     try {
-      googleCalendar.getCalendar();
+      await googleCalendar.ensureInitialized();
     } catch (calendarError) {
       return res.status(503).json({
         success: false,

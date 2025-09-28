@@ -1,7 +1,7 @@
 {
   "type": "webhook",
   "name": "autoservis-happy-system",
-  "description": "Kompletný systém pre Autoservis Happy - automaticky rozpozná či ide o požiadavku na ľudský kontakt alebo rezerváciu termínu a spracuje ju cez príslušný endpoint",
+  "description": "Kompletný systém pre Autoservis Happy - automaticky rozpozná či ide o požiadavku na ľudský kontakt alebo rezerváciu termínu a spracuje ju cez príslušný endpoint. Pri chybe vracia fallback s telefónnym číslom recepcie, ktoré musí agent zákazníkovi jasne prečítať.",
   "disable_interruptions": false,
   "force_pre_tool_speech": "auto",
   "assignments": [],

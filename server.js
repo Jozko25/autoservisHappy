@@ -15,37 +15,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Essential health endpoint first (before any complex initialization)
-app.get('/health', (req, res) => {
-  console.log('💚 Health check requested');
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    message: 'Server is running'
-  });
-});
-
-// Root endpoint for debugging
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Autoservis Happy API',
-    version: 'UNIFIED-SYSTEM-v8',
-    status: 'running',
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/health',
-      sms: '/webhook/sms',
-      humanRequest: '/webhook/human-request',
-      booking: '/booking/appointment'
-    }
-  });
-});
-
 // Now try to load complex modules safely
 let twilio = null;
 let googleCalendar = null;
 let bookingRoutes = null;
+let googleCalendarReady = false;
+let googleCalendarInitError = null;
 
 try {
   twilio = require('twilio');
@@ -99,34 +74,21 @@ try {
 
 // Initialize Google Calendar API (don't block server startup)
 console.log('📅 Initializing Google Calendar...');
-googleCalendar.initialize()
+const googleCalendarInitialization = googleCalendar.initialize()
   .then(() => {
     console.log('✅ Google Calendar initialized successfully');
+    googleCalendarReady = true;
+    googleCalendarInitError = null;
+    return true;
   })
   .catch(error => {
     console.error('⚠️  Failed to initialize Google Calendar:', error.message);
-    console.log('📋 Google Calendar booking features will be unavailable');
+    console.log('📋 Google Calendar booking features will be unavailable until credentials are provided.');
     console.log('📱 Server will continue running with SMS-only functionality');
+    googleCalendarReady = false;
+    googleCalendarInitError = error.message;
+    return false;
   });
-
-// Mount booking routes
-app.use('/booking', bookingRoutes);
-
-// Root endpoint for debugging
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Autoservis Happy API',
-    version: '1.0.0',
-    status: 'running',
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/health',
-      sms: '/webhook/sms',
-      humanRequest: '/webhook/human-request',
-      booking: '/booking/appointment'
-    }
-  });
-});
 
 app.post('/webhook/sms', async (req, res) => {
   try {
@@ -228,24 +190,51 @@ Dôvod: ${requestReason}
   }
 });
 
-app.get('/health', (_, res) => {
-  let googleCalendarStatus = 'unknown';
-  try {
-    googleCalendar.getCalendar();
+app.get('/health', async (_req, res) => {
+  let googleCalendarStatus = 'initializing';
+
+  if (googleCalendarReady) {
     googleCalendarStatus = 'initialized';
-  } catch (error) {
-    googleCalendarStatus = 'not_configured';
+  } else if (googleCalendarInitError) {
+    googleCalendarStatus = 'error';
   }
 
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    twilioConfigured: !!client,
-    googleCalendarConfigured: googleCalendarStatus,
     environment: process.env.NODE_ENV || 'development',
     services: {
-      sms: !!client ? 'available' : 'unavailable',
-      booking: googleCalendarStatus === 'initialized' ? 'available' : 'unavailable'
+      sms: client ? 'available' : 'unavailable',
+      booking: googleCalendarReady ? 'available' : 'unavailable'
+    },
+    twilio: {
+      configured: Boolean(client),
+      fromNumber
+    },
+    googleCalendar: {
+      configured: googleCalendarReady,
+      status: googleCalendarStatus,
+      error: googleCalendarInitError
+    }
+  });
+});
+
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'Autoservis Happy API',
+    version: 'UNIFIED-SYSTEM-v9',
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      smsWebhook: '/webhook/sms',
+      humanRequest: '/webhook/human-request',
+      booking: '/booking/appointment',
+      unified: '/api/unified'
+    },
+    services: {
+      sms: client ? 'available' : 'unavailable',
+      booking: googleCalendarReady ? 'available' : 'unavailable'
     }
   });
 });
@@ -253,19 +242,35 @@ app.get('/health', (_, res) => {
 // Unified API endpoint for ElevenLabs - handles both human contact and booking
 app.post('/api/unified', async (req, res) => {
   try {
-    const { request_type, customer_name, customer_phone, booking_action, service_type, preferred_date, preferred_time, reason } = req.body;
+    const {
+      request_type,
+      customer_name,
+      customer_phone,
+      booking_action,
+      service_type,
+      preferred_date,
+      preferred_time,
+      reason,
+      time_preference
+    } = req.body;
 
-    console.log('Unified request:', { request_type, customer_name, customer_phone, booking_action });
+    console.log('Unified request:', { request_type, customer_name, customer_phone, booking_action, preferred_date, preferred_time });
 
-    if (!request_type || !customer_name || !customer_phone) {
+    if (!request_type) {
       return res.status(400).json({
         success: false,
-        error: 'Chýbajú povinné údaje: request_type, customer_name, customer_phone'
+        error: 'Chýba povinný parameter request_type'
       });
     }
 
     if (request_type === 'human_contact') {
-      // Handle human contact request
+      if (!customer_name || !customer_phone) {
+        return res.status(400).json({
+          success: false,
+          error: 'Pre spojenie s človekom sú povinné meno aj telefónne číslo.'
+        });
+      }
+
       if (!client) {
         return res.status(503).json({
           success: false,
@@ -294,25 +299,58 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
         message: 'Vaša požiadavka o kontakt bola odoslaná. Niekto z tímu Vás bude čoskoro kontaktovať.',
         messageSid: messageResponse.sid
       });
+    }
 
-    } else if (request_type === 'booking') {
-      // Handle booking request - forward internally
-      const bookingRequest = {
-        body: {
-          action: booking_action || 'find_next_available',
-          customerName: customer_name,
-          customerPhone: customer_phone,
-          serviceType: service_type || 'Všeobecný servis',
-          preferredDate: preferred_date,
-          preferredTime: preferred_time,
-          notes: reason
+    if (request_type !== 'booking') {
+      return res.status(400).json({
+        success: false,
+        error: 'Neplatný typ požiadavky. Použite "human_contact" alebo "booking".'
+      });
+    }
+
+    const action = booking_action || 'find_next_available';
+    const normalizedService = service_type || 'Servis vozidla';
+
+    if (action === 'book' && (!customer_name || !customer_phone)) {
+      return res.status(400).json({
+        success: false,
+        type: 'booking',
+        error: 'Pre potvrdenie rezervácie potrebujeme meno aj telefónne číslo.'
+      });
+    }
+
+    try {
+      await googleCalendar.ensureInitialized();
+      googleCalendarReady = true;
+      googleCalendarInitError = null;
+    } catch (calendarError) {
+      googleCalendarReady = false;
+      googleCalendarInitError = calendarError.message;
+      return res.status(503).json({
+        success: false,
+        type: 'booking',
+        error: 'Kalendár nie je dostupný. Prosím skúste to o chvíľu alebo kontaktujte recepciu priamo.',
+        details: calendarError.message,
+        fallback: {
+          phone: autoservisPhone,
+          message: 'Zavolajte nám prosím na recepciu pre dokončenie rezervácie.'
         }
-      };
+      });
+    }
 
-      // Simulate internal booking request
-      const bookingUtils = require('./utils/booking-utils');
+    const bookingUtils = require('./utils/booking-utils');
+    const moment = require('moment-timezone');
 
-      if (booking_action === 'check_availability' && preferred_date) {
+    switch (action) {
+      case 'check_availability': {
+        if (!preferred_date) {
+          return res.status(400).json({
+            success: false,
+            type: 'booking',
+            error: 'Pre kontrolu dostupnosti uveďte dátum vo formáte YYYY-MM-DD.'
+          });
+        }
+
         const slots = await bookingUtils.getAvailableSlots(preferred_date);
         return res.json({
           success: true,
@@ -321,13 +359,13 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
           date: preferred_date,
           availableSlots: slots,
           totalSlots: slots.length,
-          message: slots.length > 0 ?
-            `Mám ${slots.length} voľných termínov na ${preferred_date}` :
-            `Žiaľ, na ${preferred_date} nemám voľný termín`
+          message: slots.length > 0
+            ? `Mám ${slots.length} voľných termínov na ${preferred_date}`
+            : `Žiaľ, na ${preferred_date} nemám voľný termín`
         });
       }
 
-      if (booking_action === 'find_next_available') {
+      case 'find_next_available': {
         const nextSlot = await bookingUtils.findNextAvailableSlot();
         if (!nextSlot) {
           return res.status(404).json({
@@ -337,7 +375,6 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
           });
         }
 
-        const moment = require('moment-timezone');
         const slotTime = moment(nextSlot.slot.start).tz('Europe/Bratislava');
         return res.json({
           success: true,
@@ -350,37 +387,27 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
         });
       }
 
-      if (booking_action === 'find_alternative') {
-        // Find alternative slots based on time preference
-        const { time_preference } = req.body;
-        const moment = require('moment-timezone');
-
+      case 'find_alternative': {
         let alternativeSlots = [];
 
         if (time_preference === 'later_same_day' && preferred_date) {
-          // Get all slots for the same day
           const allSlots = await bookingUtils.getAvailableSlots(preferred_date);
-          // Filter for slots later than the originally suggested time
           if (preferred_time) {
             const originalTime = moment.tz(`${preferred_date} ${preferred_time}`, 'YYYY-MM-DD HH:mm', 'Europe/Bratislava');
-            alternativeSlots = allSlots.filter(slot =>
-              moment(slot.start).isAfter(originalTime)
-            );
+            alternativeSlots = allSlots.filter(slot => moment(slot.start).isAfter(originalTime));
           } else {
             alternativeSlots = allSlots;
           }
         } else if (time_preference === 'different_day') {
-          // Find slots on different days
           for (let i = 1; i <= 7; i++) {
             const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
             const daySlots = await bookingUtils.getAvailableSlots(checkDate);
             if (daySlots.length > 0) {
-              alternativeSlots = alternativeSlots.concat(daySlots.slice(0, 3)); // Take first 3 slots from each day
+              alternativeSlots = alternativeSlots.concat(daySlots.slice(0, 3));
             }
-            if (alternativeSlots.length >= 5) break; // Limit to 5 alternative slots
+            if (alternativeSlots.length >= 5) break;
           }
         } else if (time_preference === 'morning') {
-          // Find morning slots (8:00 - 12:00)
           for (let i = 0; i <= 7; i++) {
             const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
             const daySlots = await bookingUtils.getAvailableSlots(checkDate);
@@ -394,7 +421,6 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
             if (alternativeSlots.length >= 5) break;
           }
         } else if (time_preference === 'afternoon') {
-          // Find afternoon slots (12:00 - 17:00)
           for (let i = 0; i <= 7; i++) {
             const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
             const daySlots = await bookingUtils.getAvailableSlots(checkDate);
@@ -431,10 +457,9 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
         });
       }
 
-      if (booking_action === 'book') {
-        // Create booking
-        let startTime, endTime;
-        const moment = require('moment-timezone');
+      case 'book': {
+        let startTime;
+        let endTime;
 
         if (!preferred_date || !preferred_time) {
           const nextSlot = await bookingUtils.findNextAvailableSlot();
@@ -465,11 +490,11 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
         const appointment = await bookingUtils.createAppointment({
           customerName: customer_name,
           customerPhone: customer_phone,
-          serviceType: service_type,
+          serviceType: normalizedService,
           startTime,
           endTime,
           notes: reason,
-          summary: `Servis - ${customer_name} (${service_type || 'Všeobecný'})`
+          summary: `Servis - ${customer_name} (${normalizedService})`
         });
 
         return res.json({
@@ -483,18 +508,18 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
             start: startTime,
             end: endTime,
             startFormatted: moment(startTime).tz('Europe/Bratislava').format('DD.MM.YYYY HH:mm'),
-            serviceType: service_type
+            serviceType: normalizedService
           }
         });
       }
 
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Neplatný typ požiadavky. Použite "human_contact" alebo "booking"'
-      });
+      default:
+        return res.status(400).json({
+          success: false,
+          type: 'booking',
+          error: `Neznáma akcia "${action}"`
+        });
     }
-
   } catch (error) {
     console.error('Unified endpoint error:', error);
     res.status(500).json({
