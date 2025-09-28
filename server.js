@@ -350,6 +350,87 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
         });
       }
 
+      if (booking_action === 'find_alternative') {
+        // Find alternative slots based on time preference
+        const { time_preference } = req.body;
+        const moment = require('moment-timezone');
+
+        let alternativeSlots = [];
+
+        if (time_preference === 'later_same_day' && preferred_date) {
+          // Get all slots for the same day
+          const allSlots = await bookingUtils.getAvailableSlots(preferred_date);
+          // Filter for slots later than the originally suggested time
+          if (preferred_time) {
+            const originalTime = moment.tz(`${preferred_date} ${preferred_time}`, 'YYYY-MM-DD HH:mm', 'Europe/Bratislava');
+            alternativeSlots = allSlots.filter(slot =>
+              moment(slot.start).isAfter(originalTime)
+            );
+          } else {
+            alternativeSlots = allSlots;
+          }
+        } else if (time_preference === 'different_day') {
+          // Find slots on different days
+          for (let i = 1; i <= 7; i++) {
+            const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
+            const daySlots = await bookingUtils.getAvailableSlots(checkDate);
+            if (daySlots.length > 0) {
+              alternativeSlots = alternativeSlots.concat(daySlots.slice(0, 3)); // Take first 3 slots from each day
+            }
+            if (alternativeSlots.length >= 5) break; // Limit to 5 alternative slots
+          }
+        } else if (time_preference === 'morning') {
+          // Find morning slots (8:00 - 12:00)
+          for (let i = 0; i <= 7; i++) {
+            const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
+            const daySlots = await bookingUtils.getAvailableSlots(checkDate);
+            const morningSlots = daySlots.filter(slot => {
+              const hour = moment(slot.start).hour();
+              return hour >= 8 && hour < 12;
+            });
+            if (morningSlots.length > 0) {
+              alternativeSlots = alternativeSlots.concat(morningSlots.slice(0, 3));
+            }
+            if (alternativeSlots.length >= 5) break;
+          }
+        } else if (time_preference === 'afternoon') {
+          // Find afternoon slots (12:00 - 17:00)
+          for (let i = 0; i <= 7; i++) {
+            const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
+            const daySlots = await bookingUtils.getAvailableSlots(checkDate);
+            const afternoonSlots = daySlots.filter(slot => {
+              const hour = moment(slot.start).hour();
+              return hour >= 12 && hour <= 17;
+            });
+            if (afternoonSlots.length > 0) {
+              alternativeSlots = alternativeSlots.concat(afternoonSlots.slice(0, 3));
+            }
+            if (alternativeSlots.length >= 5) break;
+          }
+        }
+
+        if (alternativeSlots.length === 0) {
+          return res.status(404).json({
+            success: false,
+            type: 'booking',
+            message: 'Nenašli sa žiadne alternatívne termíny podľa vašich preferencií'
+          });
+        }
+
+        return res.json({
+          success: true,
+          type: 'booking',
+          action: 'find_alternative',
+          alternativeSlots: alternativeSlots.map(slot => ({
+            ...slot,
+            dateFormatted: moment(slot.start).tz('Europe/Bratislava').format('DD.MM.YYYY'),
+            startFormatted: moment(slot.start).tz('Europe/Bratislava').format('HH:mm')
+          })),
+          totalSlots: alternativeSlots.length,
+          message: `Našiel som ${alternativeSlots.length} alternatívnych termínov`
+        });
+      }
+
       if (booking_action === 'book') {
         // Create booking
         let startTime, endTime;

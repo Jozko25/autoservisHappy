@@ -71,6 +71,13 @@ class BookingUtils {
       .minute(0)
       .second(0);
 
+    // Check if it's a weekend (Saturday = 6, Sunday = 0)
+    const dayOfWeek = startOfDay.day();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      // Return empty array for weekends
+      return [];
+    }
+
     const busySlots = await this.getBusySlots(
       startOfDay.toISOString(),
       endOfDay.toISOString()

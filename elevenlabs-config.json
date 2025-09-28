@@ -29,30 +29,30 @@
           "id": "customer_name",
           "type": "string",
           "value_type": "llm_prompt",
-          "description": "Meno zákazníka (povinné)",
+          "description": "Meno zákazníka (povinné len pre booking_action: book)",
           "dynamic_variable": "",
           "constant_value": "",
           "enum": null,
-          "required": true
+          "required": false
         },
         {
           "id": "customer_phone",
           "type": "string",
           "value_type": "llm_prompt",
-          "description": "Telefónne číslo zákazníka vo formáte +421XXXXXXXXX (povinné)",
+          "description": "Telefónne číslo zákazníka vo formáte +421XXXXXXXXX (povinné len pre booking_action: book)",
           "dynamic_variable": "",
           "constant_value": "",
           "enum": null,
-          "required": true
+          "required": false
         },
         {
           "id": "booking_action",
           "type": "string",
           "value_type": "llm_prompt",
-          "description": "PRVÉ VOLANIE: 'find_next_available' na nájdenie termínu. DRUHÉ VOLANIE: 'book' na vytvorenie rezervácie. Pre human_contact nevyplňuj.",
+          "description": "PRE DOSTUPNOSŤ: 'check_availability' na kontrolu termínov bez údajov. PRVÉ VOLANIE: 'find_next_available' na nájdenie termínu. AK CHCE INÝ ČAS: 'find_alternative' na nájdenie alternatív. FINÁLNE: 'book' na vytvorenie rezervácie. Pre human_contact nevyplňuj.",
           "dynamic_variable": "",
           "constant_value": "",
-          "enum": ["find_next_available", "book"],
+          "enum": ["check_availability", "find_next_available", "find_alternative", "book"],
           "required": false
         },
         {
@@ -83,6 +83,16 @@
           "dynamic_variable": "",
           "constant_value": "",
           "enum": null,
+          "required": false
+        },
+        {
+          "id": "time_preference",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Pre find_alternative: 'later_same_day' pre neskorší čas ten istý deň, 'different_day' pre iný deň, 'morning' pre ranné termíny, 'afternoon' pre popoludňajšie termíny",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "enum": ["later_same_day", "different_day", "morning", "afternoon"],
           "required": false
         },
         {
