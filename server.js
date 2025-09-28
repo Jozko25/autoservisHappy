@@ -344,10 +344,31 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
     switch (action) {
       case 'check_availability': {
         if (!preferred_date) {
-          return res.status(400).json({
-            success: false,
+          const nextSlot = await bookingUtils.findNextAvailableSlot();
+
+          if (!nextSlot) {
+            return res.status(404).json({
+              success: false,
+              type: 'booking',
+              action: 'find_next_available',
+              message: 'Nenašiel sa žiadny voľný termín v najbližších 14 dňoch'
+            });
+          }
+
+          const slotTime = moment(nextSlot.slot.start).tz('Europe/Bratislava');
+
+          return res.json({
+            success: true,
             type: 'booking',
-            error: 'Pre kontrolu dostupnosti uveďte dátum vo formáte YYYY-MM-DD.'
+            action: 'find_next_available',
+            fallback: {
+              reason: 'missing_preferred_date',
+              originalAction: 'check_availability'
+            },
+            date: nextSlot.date,
+            time: slotTime.format('HH:mm'),
+            slot: nextSlot.slot,
+            message: `Najbližší voľný termín mám ${slotTime.format('DD.MM.YYYY')} o ${slotTime.format('HH:mm')}`
           });
         }
 
