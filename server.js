@@ -254,16 +254,46 @@ app.post('/api/unified', async (req, res) => {
       time_preference
     } = req.body;
 
-    console.log('Unified request:', { request_type, customer_name, customer_phone, booking_action, preferred_date, preferred_time });
+    // Smart fallback for missing request_type
+    let resolvedRequestType = request_type;
 
-    if (!request_type) {
+    if (!resolvedRequestType) {
+      // If any booking-related field is present, assume it's a booking request
+      if (booking_action || service_type || preferred_date || preferred_time || time_preference) {
+        resolvedRequestType = 'booking';
+        console.warn(`⚠️ Unified API: Missing request_type, defaulting to "booking" based on booking fields present: ${JSON.stringify({ booking_action, service_type, preferred_date, preferred_time, time_preference })}`);
+      }
+      // If we have contact details but no booking fields, assume human contact
+      else if (customer_name && customer_phone && reason) {
+        resolvedRequestType = 'human_contact';
+        console.warn(`⚠️ Unified API: Missing request_type, defaulting to "human_contact" based on contact details with reason`);
+      }
+      // Default to booking if we have basic customer info (most common case)
+      else if (customer_name || customer_phone) {
+        resolvedRequestType = 'booking';
+        console.warn(`⚠️ Unified API: Missing request_type, defaulting to "booking" as the most common use case`);
+      }
+    }
+
+    console.log('📞 Unified request:', {
+      request_type: resolvedRequestType,
+      original_request_type: request_type,
+      customer_name,
+      customer_phone,
+      booking_action,
+      preferred_date,
+      preferred_time
+    });
+
+    // Only fail if we still couldn't determine the request type
+    if (!resolvedRequestType && !customer_name && !customer_phone) {
       return res.status(400).json({
         success: false,
-        error: 'Chýba povinný parameter request_type'
+        error: 'Chýbajú povinné údaje: request_type, customer_name, customer_phone'
       });
     }
 
-    if (request_type === 'human_contact') {
+    if (resolvedRequestType === 'human_contact') {
       if (!customer_name || !customer_phone) {
         return res.status(400).json({
           success: false,
@@ -301,7 +331,7 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
       });
     }
 
-    if (request_type !== 'booking') {
+    if (resolvedRequestType !== 'booking') {
       return res.status(400).json({
         success: false,
         error: 'Neplatný typ požiadavky. Použite "human_contact" alebo "booking".'
