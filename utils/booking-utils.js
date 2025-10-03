@@ -194,10 +194,32 @@ class BookingUtils {
         }
       };
 
-      const response = await calendar.events.insert({
-        calendarId: calendarId,
-        requestBody: event,
-      });
+      // Retry logic for network errors
+      let response;
+      let retries = 3;
+      let lastError;
+
+      for (let i = 0; i < retries; i++) {
+        try {
+          response = await calendar.events.insert({
+            calendarId: calendarId,
+            requestBody: event,
+          });
+          break; // Success, exit retry loop
+        } catch (err) {
+          lastError = err;
+          if (err.code === 'ERR_STREAM_PREMATURE_CLOSE' && i < retries - 1) {
+            console.warn(`Calendar API connection closed, retrying... (attempt ${i + 1}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+            continue;
+          }
+          throw err; // Re-throw if not retryable or last attempt
+        }
+      }
+
+      if (!response) {
+        throw lastError;
+      }
 
       return {
         success: true,
@@ -209,6 +231,9 @@ class BookingUtils {
     } catch (error) {
       if (error.code === 409) {
         throw new Error('Tento termín už bol medzičasom obsadený. Prosím, vyberte iný termín.');
+      }
+      if (error.code === 'ERR_STREAM_PREMATURE_CLOSE') {
+        throw new Error('Problém s pripojením ku kalendáru. Prosím, skúste rezerváciu znova.');
       }
       console.error('Error creating appointment:', error);
       throw error;
