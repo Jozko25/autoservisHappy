@@ -441,7 +441,14 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
       case 'find_alternative': {
         let alternativeSlots = [];
 
-        if (time_preference === 'later_same_day' && preferred_date) {
+        // Fallback: if later_same_day but no preferred_date, treat as different_day
+        let effectiveTimePreference = time_preference;
+        if (time_preference === 'later_same_day' && !preferred_date) {
+          console.warn('⚠️ find_alternative: later_same_day without preferred_date, falling back to different_day');
+          effectiveTimePreference = 'different_day';
+        }
+
+        if (effectiveTimePreference === 'later_same_day' && preferred_date) {
           const allSlots = await bookingUtils.getAvailableSlots(preferred_date);
           if (preferred_time) {
             const originalTime = moment.tz(`${preferred_date} ${preferred_time}`, 'YYYY-MM-DD HH:mm', 'Europe/Bratislava');
@@ -449,7 +456,7 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
           } else {
             alternativeSlots = allSlots;
           }
-        } else if (time_preference === 'different_day') {
+        } else if (effectiveTimePreference === 'different_day') {
           for (let i = 1; i <= 7; i++) {
             const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
             const daySlots = await bookingUtils.getAvailableSlots(checkDate);
@@ -471,7 +478,7 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
             }
             if (alternativeSlots.length >= 5) break;
           }
-        } else if (time_preference === 'afternoon') {
+        } else if (effectiveTimePreference === 'afternoon') {
           for (let i = 0; i <= 7; i++) {
             const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
             const daySlots = await bookingUtils.getAvailableSlots(checkDate);
@@ -483,6 +490,17 @@ Dôvod: ${reason || 'Požiadavka o ľudský kontakt cez hlasovú asistentku'}
               alternativeSlots = alternativeSlots.concat(afternoonSlots.slice(0, 3));
             }
             if (alternativeSlots.length >= 5) break;
+          }
+        } else {
+          // No valid time_preference - return next 7 days of slots
+          console.warn('⚠️ find_alternative: no valid time_preference, returning next available slots');
+          for (let i = 0; i <= 7; i++) {
+            const checkDate = moment().add(i, 'days').format('YYYY-MM-DD');
+            const daySlots = await bookingUtils.getAvailableSlots(checkDate);
+            if (daySlots.length > 0) {
+              alternativeSlots = alternativeSlots.concat(daySlots.slice(0, 2));
+            }
+            if (alternativeSlots.length >= 8) break;
           }
         }
 
